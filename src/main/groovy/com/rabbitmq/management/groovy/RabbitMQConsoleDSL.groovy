@@ -3,6 +3,11 @@
  */
 package com.rabbitmq.management.groovy
 
+import groovy.lang.Closure
+
+import java.util.HashMap
+import java.util.Map
+
 /**
  * @author felgutie
  *
@@ -36,6 +41,7 @@ class RabbitMQConsoleDSL {
 	
 	/**
 	 * Display information based on the key/value
+	 * <p>
 	 * Usage:
 	 * <p>
 	 * <code> display info:'all' </code>
@@ -46,21 +52,21 @@ class RabbitMQConsoleDSL {
 	 * </ul>
 	 * The possible values are for <code>info</code> key:
 	 * <ul>
-	 * <li> all - Various random bits of information that describe the whole system.
-	 * <li> nodes - A list of nodes in the RabbitMQ cluster.
-	 * <li> extensions - A list of extensions to the management plugin.
-	 * <li> definitions - The server definitions - exchanges, queues, bindings, users, virtual hosts, permissions and parameters. Everything apart from messages 
-	 * <li> connections - A list of all open connections.
-	 * <li> channels - A list of all open channels.
-	 * <li> exchanges - A list of all exchanges.
-	 * <li> queues - A list of all queues.
-	 * <li> bindings - A list of all bindings.
-	 * <li> vhosts - A list of all vhosts.
-	 * <li> users - A list of all users.
-	 * <li> whoami - Details of the currently authenticated user.
-	 * <li> permissions - A list of all permissions for all users.
-	 * <li> parameters - A list of all parameters.
-	 * <li> policies - A list of all policies.
+	 * <li> 'all' or 'overview' - Various random bits of information that describe the whole system.
+	 * <li> 'nodes' - A list of nodes in the RabbitMQ cluster.
+	 * <li> 'extensions' - A list of extensions to the management plugin.
+	 * <li> 'definitions' - The server definitions - exchanges, queues, bindings, users, virtual hosts, permissions and parameters. Everything apart from messages 
+	 * <li> 'connections' - A list of all open connections.
+	 * <li> 'channels' - A list of all open channels.
+	 * <li> 'exchanges' - A list of all exchanges.
+	 * <li> 'queues' - A list of all queues.
+	 * <li> 'bindings' - A list of all bindings.
+	 * <li> 'vhosts' - A list of all vhosts.
+	 * <li> 'users' - A list of all users.
+	 * <li> 'whoami' - Details of the currently authenticated user.
+	 * <li> 'permissions' - A list of all permissions for all users.
+	 * <li> 'parameters' - A list of all parameters.
+	 * <li> 'policies' - A list of all policies.
 	 * </ul>
 	 * @return String, json format
 	 */
@@ -68,6 +74,19 @@ class RabbitMQConsoleDSL {
 		println get(params)
 	}
 	
+	/**
+	 * Sends a message to the Exchange specified. This action is for testing purpose.
+	 * <p>
+	 * Usage:
+	 * <p>
+	 * <code>
+	 * send{
+	 *		message body:"",headers:[:],options:''
+	 *	}
+	 * </code>	
+	 * @param message body
+	 * @return String, json format
+	 */
 	def send(Closure c){
 		
 	}
@@ -85,7 +104,17 @@ class RabbitMQConsoleDSL {
 		result
 	}
 	
-	Map params
+	/**
+	 * This action defines an alert when some of the keys changed, and it's trigger based on
+	 * the events defined
+	 * @param when
+	 * @return String, json format
+	 */
+	def alert(Closure c){
+		Alert.admin new HashMap(this.params),c 
+	}
+	
+	Map params = [:]
 	
 	/**
 	 * This is a map that contains the configuration options for RabbitMQ
@@ -203,4 +232,55 @@ class Delete {
 		println this.options
 		RabbitMQConsole.deleteExchange exchange:params.name,vhost:params.vhost,server:params.server
 	}
+}
+
+class Alert{
+	private Map options
+	private Alert(options){
+		this.options = [:]
+		this.options = options
+	}
+	
+	static admin(options, Closure c){
+		def clone = c.clone()
+		clone.delegate = new Alert(options)
+		clone.resolveStrategy = Closure.DELEGATE_ONLY
+		clone()
+	}
+	
+	Map params = [:]
+	/**
+	 * Setting options for the trigger like a cron
+	 * @param params
+	 * @return
+	 */
+	def options(params){
+		this.params = params
+		println this.params	
+	}
+	
+	/**
+	 * Triggers an event
+	 * @param params
+	 * @return
+	 */
+	def when(params){
+		this.options << params
+		//println this.options
+		if(this.options.message){
+			if(this.options.message(unack:100,memory:101)){
+				println "ALERT!!"
+				if(this.options.send){
+					if(this.options.send instanceof Closure){
+						def info = [:]
+						this.options.send(info)
+					}else
+						println this.options.send
+						
+					this.options.send = null
+				}
+			}
+		}
+	}
+	
 }

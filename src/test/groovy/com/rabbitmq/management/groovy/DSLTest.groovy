@@ -16,8 +16,8 @@ class DSLTest {
 		//System.setProperty "javax.net.ssl.trustStorePassword", ""
 		
 		RabbitMQConsoleDSL.admin {
-			options vhost:'/',server:'172.16.196.138', protocol: 'https'
-			display info:'overview'
+			//options vhost:'/',server:'172.16.196.138', protocol: 'http'
+			//display info:'overview'
 
 			/*
 			create {
@@ -36,6 +36,21 @@ class DSLTest {
 				
 			}
 			*/
+			
+			alert {
+				options cron:"* * */?", emailto:"jdoe@critical.com"
+				
+				when message: { msg->
+					msg.unack == 100 && msg.memory > 50
+				}, send: "Error: UnAck and Memory"
+				
+				when message: { msg ->
+					msg.memory > 100
+				}, send: { info ->
+					println "Critical, error in Memory"
+					println info
+				}
+			}
 		}
 		
 	}
