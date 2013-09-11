@@ -16,13 +16,15 @@ class DSLTest {
 		//System.setProperty "javax.net.ssl.trustStorePassword", ""
 		
 		RabbitMQConsoleDSL.admin {
-			//options vhost:'/',server:'172.16.196.138', protocol: 'http'
-			//display info:'overview'
-
 			/*
+			options vhost:'/',server:'172.16.196.138', protocol: 'http'
+			display info:'overview'
+
+			
 			create {
 				exchange name:'dsl-exchange',options:'{"type":"direct","durable":true}'
 			}
+			
 			delete {
 				exchange name:'dsl-exchange'
 			}
@@ -50,6 +52,15 @@ class DSLTest {
 					println "Critical, error in Memory"
 					println info
 				}
+				
+				//IDEAS for the DSL on the 'alert' action
+				/*
+				when queue:{ q ->
+					q.name == "myqueue"
+					export plot > "/tmp/"
+					
+				}
+				*/
 			}
 		}
 		
